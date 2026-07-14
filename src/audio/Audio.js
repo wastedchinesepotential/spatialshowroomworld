@@ -32,10 +32,10 @@ export class Audio {
   
   async loadStems(onProgress) {
     const files = {
-      splat1:  './public/assets/sounds/palisade/05.31.26 palisade glames BASS.mp3', // Splat 1 is BASS
-      shoe:    './public/assets/sounds/palisade/05.31.26 palisade glames DRUGS.mp3', // Shoe is DRUGS
-      splat2:  './public/assets/sounds/palisade/05.31.26 palisade glames SNAT.mp3',
-      impact:  './public/assets/sounds/techimpact.wav'
+      splat1:  '/assets/sounds/palisade/05.31.26 palisade glames BASS.mp3', // Splat 1 is BASS
+      shoe:    '/assets/sounds/palisade/05.31.26 palisade glames DRUGS.mp3', // Shoe is DRUGS
+      splat2:  '/assets/sounds/palisade/05.31.26 palisade glames SNAT.mp3',
+      impact:  '/assets/sounds/techimpact.wav'
     };
     
     const entries = Object.entries(files);
