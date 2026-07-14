@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#020205" />
+  <title>SPATIAL PROTOTYPE</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Racing+Sans+One&display=swap" rel="stylesheet">
+
+  <!-- Import map: same pattern as WorldDeTester — delete when moving to Vite -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/",
+      "@dimforge/rapier3d-compat": "https://cdn.jsdelivr.net/npm/@dimforge/rapier3d-compat@0.14.0/+esm"
+    }
+  }
+  </script>
+
+  <link rel="stylesheet" href="./src/style.css" />
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- Loading curtain -->
+  <div id="loading" class="loading">
+    <div class="loading__inner">
+      <div class="loading__cube">
+        <div class="cube-face cube-front"></div>
+        <div class="cube-face cube-back"></div>
+        <div class="cube-face cube-left"></div>
+        <div class="cube-face cube-right"></div>
+        <div class="cube-face cube-top"></div>
+        <div class="cube-face cube-bottom"></div>
+      </div>
+      <div class="loading__title"><span>SPATIAL</span></div>
+      <div class="loading__sub">SHOWROOM PROTOTYPE</div>
+      
+      <div class="loading__spinner">
+        <svg viewBox="0 0 100 100">
+          <defs>
+            <linearGradient id="spinner-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="var(--rose)" />
+              <stop offset="50%" stop-color="var(--brass)" />
+              <stop offset="100%" stop-color="var(--amber)" />
+            </linearGradient>
+          </defs>
+          <circle cx="50" cy="50" r="46" class="spinner-bg" />
+          <circle cx="50" cy="50" r="46" class="spinner-fill" id="loading-fill" />
+        </svg>
+      </div>
+      
+      <div class="loading__status" id="loading-status">INITIALIZING…</div>
+    </div>
+  </div>
+
+  <div id="hud" class="hud">
+    <div id="zone-banner" class="zone-banner"></div>
+    <div id="flash" class="flash"></div>
+
+    <div class="hud-controls hud-controls--left">
+      <button id="btn-home" class="glass-pill" aria-label="return home"><span>⌂</span>HOME</button>
+    </div>
+
+    <div class="hud-controls hud-controls--right" style="position: absolute; top: 20px; right: 20px; display: flex; gap: 10px;">
+      <button id="btn-avatar" class="glass-pill" aria-label="switch avatar"><span>♙</span>CHARACTER</button>
+      <button id="btn-audio" class="glass-pill" aria-label="toggle audio" style="padding: 10px; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;"><span>♪</span></button>
+    </div>
+
+    <!-- interaction prompt -->
+    <div id="prompt" class="prompt" aria-hidden="true">
+      <span class="prompt__text">inspect</span>
+      <span class="prompt__hint">tap to inspect</span>
+    </div>
+
+    <!-- exhibit panel -->
+    <div id="panel" class="panel" aria-hidden="true">
+      <div class="panel__card">
+        <button id="panel-close" class="panel__close" aria-label="close">✕</button>
+        <div class="panel__kicker" id="panel-kicker">EXHIBIT</div>
+        <h2 class="panel__title" id="panel-title">—</h2>
+        <p class="panel__body" id="panel-body">—</p>
+        <div class="panel__links" id="panel-links"></div>
+        <div class="panel__rule"></div>
+        <div class="panel__meta" id="panel-meta"></div>
+      </div>
+    </div>
+
+    <!-- bottom-right dock -->
+    <div class="dock">
+      <button id="btn-vehicle" class="ride-btn" aria-label="toggle ride">✦</button>
+      <button id="btn-drone" class="ride-btn" aria-label="toggle drone">⊙</button>
+      <button id="btn-jump" class="tbtn tbtn--jump" aria-label="jump">▲</button>
+    </div>
+
+    <!-- botanical inspect overlay -->
+    <div id="focus" class="focus" aria-hidden="true">
+      <div class="focus__caption">
+        <div class="focus__kicker" id="focus-kicker">ITEM</div>
+        <h2 class="focus__title" id="focus-title">—</h2>
+        <p class="focus__body" id="focus-body">—</p>
+      </div>
+      <div class="focus__hint">tap anywhere to return</div>
+    </div>
+
+    <div id="perf" class="perf" aria-hidden="true">00 fps</div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
