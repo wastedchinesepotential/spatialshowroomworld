@@ -376,8 +376,8 @@ export class Player {
       if (this.experience.isTouch && this._isFlyingForward) {
         const camDir = new THREE.Vector3();
         this.experience.camera.instance.getWorldDirection(camDir);
-        // Offset by roughly +0.25 (~15 degrees) so looking slightly down keeps flight horizontal
-        vyTarget = (camDir.y + 0.25) * spd * 1.5; 
+        // Offset by roughly +0.12 (~7 degrees) so looking slightly down keeps flight horizontal
+        vyTarget = (camDir.y + 0.12) * spd * 0.8; 
       }
       
       if (input.ascend) vyTarget = spd;

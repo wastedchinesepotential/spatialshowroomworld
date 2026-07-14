@@ -59,10 +59,10 @@ export class Input {
       let dx = e.clientX - this._lookLast.x, dy = e.clientY - this._lookLast.y;
       
       if (IS_TOUCH) {
-        dx *= 2.5; // Flat 2.5x look sensitivity boost on all touch gestures
-        dy *= 2.5;
+        dx *= 1.8; // Flat 1.8x look sensitivity boost on all touch gestures
+        dy *= 1.8;
         if (this.joystick.active && this.joystick.y < -0.1) {
-          const boost = 1.0 + (Math.abs(this.joystick.y) * 1.5);
+          const boost = 1.0 + (Math.abs(this.joystick.y) * 0.8);
           dx *= boost;
           dy *= boost;
         }
