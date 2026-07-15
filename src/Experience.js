@@ -106,18 +106,15 @@ export class Experience {
     if (this.audio && this.audio.listener && this.audio.listener.context) {
       const ctx = this.audio.listener.context;
       
-      // Fade in master volume over 2 seconds
+      // Fade in master volume quickly over 0.5 seconds
       const gainNode = this.audio.listener.gain;
       gainNode.gain.setValueAtTime(0.01, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(1.0, ctx.currentTime + 2.0);
+      gainNode.gain.exponentialRampToValueAtTime(1.0, ctx.currentTime + 0.5);
       
       if (ctx.state === 'suspended') {
         ctx.resume().catch(() => {});
       }
     }
-
-    // Dedicate explicit loading screen time to ensure audio buffers and starts playing
-    await new Promise(resolve => setTimeout(resolve, 2000));
 
     this.ready = true;
     this.ui.hideLoading();
