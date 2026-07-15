@@ -90,6 +90,7 @@ export class Audio {
       this.spiritBombAudio.setMaxDistance(300);
       this.spiritBombAudio.setLoop(false);
       this.spiritBombAudio.setVolume(0.25); // Lower volume as requested
+      this.spiritBombAudio.offset = 0.5; // Start half a second in
       
       // Attach to the orb mesh so it fades out as it flies away
       if (this.experience.world?.spiritBomb) {

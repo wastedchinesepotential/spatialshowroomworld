@@ -358,7 +358,23 @@ export class FloatingOrbs {
           }
         }
       }
+      // Shoe collision
+      const shoeRadius = 14.0;
+      const dxS = orb.position.x;
+      const dyS = orb.position.y - 15;
+      const dzS = orb.position.z;
+      const distS = Math.hypot(dxS, dyS, dzS);
+      if (distS < shoeRadius && distS > 0.1) {
+        const normal = new THREE.Vector3(dxS, dyS, dzS).normalize();
+        orb.vel.copy(normal);
+        orb.position.addScaledVector(normal, shoeRadius - distS);
+        // Sparks!
+        if (this.experience.world?.sparks) {
+          const cPos = new THREE.Vector3(0, 15, 0).addScaledVector(normal, shoeRadius);
+          this.experience.world.sparks.emit(cPos, normal, 5, 0xffffff);
+        }
       }
+    }
 
     // 2. Orbs vs Orbs
     for (let i = 0; i < this.orbs.length; i++) {

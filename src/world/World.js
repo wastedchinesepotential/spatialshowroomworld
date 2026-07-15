@@ -5,7 +5,7 @@ import { ShowroomFloor } from './ShowroomFloor.js';
 import { FloatingOrbs } from './FloatingOrbs.js';
 import { Drone } from './Drone.js';
 import { Sparks } from './Sparks.js';
-import { Podium } from './Podium.js';
+import { Shoe } from './Shoe.js';
 import { Footsteps } from './Footsteps.js';
 import { EvercoastDisplay } from './EvercoastDisplay.js';
 import { Constellations } from './Constellations.js';
@@ -19,7 +19,7 @@ export class World {
     this.environment = new Environment(experience);
     this.player = new Player(experience);
     this.ground = new ShowroomFloor(experience);
-    this.podium = new Podium(experience);
+    this.shoe = new Shoe(experience);
     
     this.orbs = new FloatingOrbs(experience);
     this.drone = new Drone(experience);
@@ -38,7 +38,7 @@ export class World {
 
   updateScenery(delta, elapsed) {
     this.environment.update(delta, elapsed);
-    if (this.podium) this.podium.update(delta, elapsed);
+    if (this.shoe) this.shoe.update(delta, elapsed);
     this.ground.update(delta, elapsed, this.player?.position);
     this.orbs.update(delta, elapsed);
     if (this.drone) this.drone.update(delta, elapsed);

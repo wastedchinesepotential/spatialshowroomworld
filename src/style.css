@@ -19,7 +19,8 @@
   --glass-sh:  0 8px 24px rgba(0,0,0,0.60);
   --blur:      blur(9px) saturate(130%);
 
-  --font-display: "Racing Sans One", system-ui, "Segoe UI", sans-serif;
+  --font-display: "Pixelify Sans", system-ui, "Segoe UI", sans-serif;
+  --font-title: "Racing Sans One", system-ui, sans-serif;
   --font-mono: "Space Mono", ui-monospace, monospace;
 }
 
@@ -98,6 +99,7 @@ html, body {
 }
 
 .loading__title {
+  font-family: var(--font-title);
   font-weight: 800; font-size: 42px; line-height: 0.98;
   letter-spacing: 0.16em; margin: 14px 0 6px 0; color: var(--bone);
   text-align: center;
@@ -114,7 +116,7 @@ html, body {
   100% { text-shadow: 0 0 20px rgba(255,85,0,0.6), 0 0 40px rgba(255,85,0,0.4), 0 0 8px rgba(255,255,255,0.2); }
 }
 
-.loading__sub { font-size: 10px; letter-spacing: 0.26em; color: var(--fog); margin-left: 8px; font-family: var(--font-mono); }
+.loading__sub { font-size: 10px; letter-spacing: 0.26em; color: var(--fog); margin-left: 8px; }
 
 .loading__spinner { 
   width: 50px; height: 50px; 
@@ -138,7 +140,7 @@ html, body {
   transition: stroke-dashoffset 0.3s ease;
   filter: drop-shadow(0 0 8px rgba(255,85,0,0.6));
 }
-.loading__status { font-size: 10px; letter-spacing: 0.34em; color: var(--fog); font-family: var(--font-mono); }
+.loading__status { font-size: 10px; letter-spacing: 0.34em; color: var(--fog); }
 
 /* -------------------------------------------------------------------- hud */
 .hud { position: fixed; inset: 0; z-index: 20; pointer-events: none; }
@@ -182,7 +184,9 @@ html, body {
   transition: transform .12s ease, background .2s ease;
 }
 .glass-pill span { font-size: 15px; color: var(--brass); }
-.glass-pill:hover { background: linear-gradient(160deg, rgba(255,255,255,0.26), rgba(255,255,255,0.06)); }
+@media (hover: hover) {
+  .glass-pill:hover { background: linear-gradient(160deg, rgba(255,255,255,0.26), rgba(255,255,255,0.06)); }
+}
 .glass-pill:active { transform: scale(0.94); }
 .glass-pill.is-off { opacity: 0.5; }
 .glass-pill.is-off span { color: var(--fog); }
@@ -251,7 +255,10 @@ kbd {
   background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.2);
   color: var(--fog); font-size: 13px; cursor: pointer; pointer-events: auto; transition: all .2s ease;
 }
-.panel__close:hover { color: var(--ink); background: var(--brass); border-color: var(--brass); }
+.panel__close:active { transform: scale(0.9); }
+@media (hover: hover) {
+  .panel__close:hover { color: var(--ink); background: var(--brass); border-color: var(--brass); }
+}
 .panel__kicker { font-size: 10px; letter-spacing: 0.5em; color: var(--brass); margin-bottom: 12px; font-weight: 700; }
 .panel__title { font-size: 34px; font-weight: 800; letter-spacing: 0.02em; line-height: 1.04; margin-bottom: 14px; }
 .panel__body { font-size: 14px; line-height: 1.7; color: var(--fog); font-family: var(--font-mono); }
@@ -283,7 +290,14 @@ body.is-touch .tbtn--jump { display: grid; }
   color: var(--brass); font-size: 19px; cursor: pointer;
   transition: transform .1s ease, background .2s ease, color .2s ease, border-color .2s ease;
 }
-.ride-btn:hover { background: linear-gradient(160deg, rgba(255,255,255,0.22), rgba(255,255,255,0.05)); }
+body.is-touch .ride-btn { width: 76px; height: 76px; font-size: 26px; }
+
+.special-btn { width: 84px; height: 84px; font-size: 36px; }
+body.is-touch .special-btn { width: 92px; height: 92px; font-size: 40px; }
+
+@media (hover: hover) {
+  .ride-btn:hover { background: linear-gradient(160deg, rgba(255,255,255,0.22), rgba(255,255,255,0.05)); }
+}
 .ride-btn:active { transform: scale(0.9); }
 .ride-btn.is-on { color: var(--cyan); border-color: rgba(255,85,0,0.55); box-shadow: var(--glass-sh), 0 0 16px rgba(255,85,0,0.35); }
 

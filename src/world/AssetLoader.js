@@ -11,11 +11,21 @@ const GLB = {
   flightIdle: '/assets/FLIGHT/flightidle.glb',
   flyingLoop: '/assets/FLIGHT/flyingforward.glb',
   flyBoost: '/assets/FLIGHT/flyboost.glb',
-  shoe: '/assets/jordancactus.glb',
+  shoe: '/assets/cactusjackmerged-compressed.glb',
 };
 
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+
 export class AssetLoader {
-  constructor() { this.gltf = new GLTFLoader(); this.cache = {}; }
+  constructor() { 
+    this.gltf = new GLTFLoader(); 
+    
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+    this.gltf.setDRACOLoader(dracoLoader);
+    
+    this.cache = {}; 
+  }
   _loadGLB(key, url) {
     return new Promise((resolve) => {
       this.gltf.load(url,

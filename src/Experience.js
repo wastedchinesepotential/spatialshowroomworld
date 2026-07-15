@@ -67,9 +67,9 @@ export class Experience {
     }
     
     // Attach audio to meshes
-    if (this.world.podium && this.world.splat) {
+    if (this.world.shoe && this.world.splat) {
       this.audio.attachStems(
-        this.world.podium.group,
+        this.world.shoe.group,
         this.world.splat.meshLeft,
         this.world.splat.meshRight
       );
@@ -86,7 +86,7 @@ export class Experience {
     const p = this.world.player;
     p.surfaceUp.set(0, 1, 0);
     p.camForward.set(0, 0, -1);
-    p.teleport(-35.99, 46.28); // Match the Player.js spawn
+    p.teleport(-35.99, 46.28); // Reverted spawn
     p.flying = false;
     this.controlTarget.copy(p.chest);
     this.camera.setTarget(this.controlTarget);
@@ -94,6 +94,30 @@ export class Experience {
     
     this.ui.setLoading(0.95, 'CATCHING THE LIGHT…');
     this.postfx.render(0);
+
+    this.ui.setLoading(0.98, 'MIXING AUDIO STREAMS…');
+    
+    // Fake user interaction events to trick the browser into unlocking audio context
+    document.body.dispatchEvent(new Event('click', { bubbles: true }));
+    document.body.dispatchEvent(new Event('touchstart', { bubbles: true }));
+    document.body.dispatchEvent(new Event('keydown', { bubbles: true }));
+
+    // Auto trigger audio context to start music immediately upon load without muting it
+    if (this.audio && this.audio.listener && this.audio.listener.context) {
+      const ctx = this.audio.listener.context;
+      
+      // Fade in master volume over 2 seconds
+      const gainNode = this.audio.listener.gain;
+      gainNode.gain.setValueAtTime(0.01, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(1.0, ctx.currentTime + 2.0);
+      
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(() => {});
+      }
+    }
+
+    // Dedicate explicit loading screen time to ensure audio buffers and starts playing
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     this.ready = true;
     this.ui.hideLoading();
@@ -106,11 +130,16 @@ export class Experience {
   toggleControl() {
     const p = this.world.player;
     p.flying = !p.flying;
+    if (p.flying) {
+      // Lift character extremely high into the air to emphasize flight mode
+      p.vy = 28;
+    }
   }
 
   goHome() {
     const p = this.world.player;
-    p.teleport(0, 40);
+    p.teleport(-35.99, 46.28);
+    p.camForward.set(0, 0, -1);
     p.flying = false;
     this.controlTarget.copy(p.chest);
     this.camera.snap();
