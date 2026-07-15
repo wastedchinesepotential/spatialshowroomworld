@@ -24,7 +24,8 @@ export class Environment {
 
     // Moonlight / Sun replacement
     this.moon = new THREE.DirectionalLight(0xff9944, 1.75); // Warm sunset orange, 30% lower
-    this.moon.position.set(-150, 50, -80).applyAxisAngle(new THREE.Vector3(0, 1, 0), -60 * Math.PI / 180);
+    // Lowered Y from 50 to 15 to stretch and widen the ground reflection!
+    this.moon.position.set(-150, 15, -80).applyAxisAngle(new THREE.Vector3(0, 1, 0), -60 * Math.PI / 180);
     this.moon.castShadow = true;
     this.moon.shadow.mapSize.set(quality.shadowMapSize, quality.shadowMapSize);
     this.moon.shadow.camera.left = -250;
@@ -37,7 +38,8 @@ export class Environment {
 
     // Cool Rim Light for Chiaroscuro Contrast
     const rimLight = new THREE.DirectionalLight(0x88ccff, 1.2); // Cool cyan/blue
-    rimLight.position.set(150, 30, 80).applyAxisAngle(new THREE.Vector3(0, 1, 0), -60 * Math.PI / 180);
+    // Lowered Y from 30 to 10 to stretch and widen the ground reflection!
+    rimLight.position.set(150, 10, 80).applyAxisAngle(new THREE.Vector3(0, 1, 0), -60 * Math.PI / 180);
     this.experience.scene.add(rimLight);
 
     // Giant overhead spotlight for the shoe area

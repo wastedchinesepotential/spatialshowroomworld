@@ -161,8 +161,11 @@ export class FloatingOrbs {
           vec3 grad = mix(col1, col2, blend1);
           grad = mix(grad, col3, blend2);
           
-          // Completely override the final pixel color to ignore broken lighting/shadows
-          gl_FragColor = vec4(grad * 1.5, 1.0);
+          // Breathing pulse — intensity oscillates between 1.0 and 2.5
+          float pulse = sin(uTime * 4.0) * 0.5 + 0.5;
+          float intensity = 1.0 + pulse * 1.5;
+          
+          gl_FragColor = vec4(grad * intensity, 1.0);
         }
         `
       );
@@ -307,7 +310,10 @@ export class FloatingOrbs {
         const dy = orb.position.y - pPos.y;
         const dz = orb.position.z - pPos.z;
         const dist3D = Math.hypot(dx, dy, dz);
-        const minDist = R_ORB + R_PLAYER;
+        
+        // Give the target orb a slightly larger collection radius
+        const targetBonus = (i === this.targetIndex) ? 1.5 : 0.0;
+        const minDist = R_ORB + R_PLAYER + targetBonus;
         
         if (dist3D < minDist && dist3D > 0.1) {
           const normal = new THREE.Vector3(dx, dy, dz).normalize();
@@ -321,11 +327,18 @@ export class FloatingOrbs {
           // Sparks!
           if (this.experience.world?.sparks) {
             const cPos = new THREE.Vector3().copy(pPos).addScaledVector(normal, R_PLAYER);
-            this.experience.world.sparks.emit(cPos, normal, 5);
+            const sparkColor = (i === this.targetIndex) ? 0xffaa22 : 0x00aaff; // Gold for target, blue for others
+            this.experience.world.sparks.emit(cPos, normal, 5, sparkColor);
           }
           
           // Gamification Check!
           if (i === this.targetIndex) {
+            
+            // Play sparkle audio!
+            if (this.experience.audio) {
+              this.experience.audio.playSparkle(orb.position);
+            }
+            
             // Turn off current target
             this.mesh.setColorAt(this.targetIndex, new THREE.Color(0x050505));
             
@@ -338,7 +351,10 @@ export class FloatingOrbs {
             this.mesh.setColorAt(this.targetIndex, new THREE.Color(0xffffff));
             this.mesh.instanceColor.needsUpdate = true;
             
-            // UI flash removed per request
+            // Reward: spawn a new orbiting drone companion!
+            if (this.experience.world?.drone) {
+              this.experience.world.drone.addOrb();
+            }
           }
         }
       }
@@ -391,8 +407,23 @@ export class FloatingOrbs {
       }
       
       dummy.position.copy(orb.position);
+      
+      // Pulse the target orb's scale to make it more obvious, larger and harder pulse
+      if (i === this.targetIndex) {
+        const pulse = 1.4 + Math.sin(elapsed * 8.0) * 0.4; // 1.0 -> 1.8 fast breathing
+        dummy.scale.setScalar(pulse);
+      } else {
+        dummy.scale.setScalar(1.0);
+      }
+      
       dummy.updateMatrix();
       this.mesh.setMatrixAt(i, dummy.matrix);
+    }
+    
+    // Pulse the target orb's point light too (desktop only)
+    const targetOrb = this.orbs[this.targetIndex];
+    if (targetOrb && targetOrb.light) {
+      targetOrb.light.intensity = 15 + Math.sin(elapsed * 8.0) * 12;
     }
     
     this.mesh.instanceMatrix.needsUpdate = true;

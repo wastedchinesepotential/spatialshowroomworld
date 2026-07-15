@@ -63,6 +63,31 @@ export class Player {
     this.experience.scene.add(this.mesh);
     this._useNewAvatar = true;
     this._loadCurrentAvatar();
+    
+    // Pre-compile the alternate avatar's shaders to avoid lag on first switch
+    this._preloadAlternateAvatar();
+  }
+
+  _preloadAlternateAvatar() {
+    // Temporarily build the other avatar offscreen so its shaders compile
+    const altKey = this._useNewAvatar ? 'avatar' : 'avatarNew';
+    const altGltf = this.experience.assets?.get(altKey);
+    if (!altGltf || !altGltf.scene) return;
+
+    const clone = SkeletonUtils.clone(altGltf.scene);
+    clone.position.set(0, -9999, 0); // Way below the world, invisible
+    this.experience.scene.add(clone);
+
+    // Force one render pass so Three.js compiles the shaders, then remove it
+    requestAnimationFrame(() => {
+      this.experience.scene.remove(clone);
+      clone.traverse(c => {
+        if (c.isMesh) {
+          c.geometry?.dispose();
+          // Don't dispose material — it's shared with the cached asset
+        }
+      });
+    });
   }
 
   toggleAvatar() {
@@ -300,6 +325,12 @@ export class Player {
   }
 
   update(dt, input) {
+    if (this._frozen) {
+      input.moveX = 0; input.moveZ = 0; input.strafeX = 0;
+      input.jump = false; input.dash = false; input.ascend = false; input.descend = false;
+      input.run = false;
+    }
+    
     const yaw = this.experience.camera.getYaw();
     this._forward.set(-Math.sin(yaw), 0, -Math.cos(yaw));
     this._right.set(Math.cos(yaw), 0, -Math.sin(yaw));
@@ -562,7 +593,7 @@ export class Player {
         const targetFlight = this.flying ? 1 : 0;
         const targetFlightMove = (this.flying && this._isFlyingForward && this.speed > 0.3) ? 1 : 0;
         const targetFlightBoost = (this.dashTimer > 0 && this._isFlyingForward) ? 1 : 0; // Only twirl if moving forward
-        const targetFall = (this.isFalling && !this.flying && this.landingTimer <= 0) ? 1 : 0;
+        const targetFall = ((this.isFalling && !this.flying) || this._forceFall) && this.landingTimer <= 0 ? 1 : 0;
         const targetLand = (this.landingTimer > 0) ? 1 : 0;
         
         this._moveW += (targetMove - this._moveW) * Math.min(delta * 6, 1);
@@ -590,29 +621,32 @@ export class Player {
         let runWeight = locoWeight * this._runFade;
         let walkWeight = locoWeight * (1 - this._runFade);
         
-        // If falling or landing, override walking weights
+        // Flight locomotion weights
+        let flightBoostWeight = this._flightBoostW * this._flightFade;
+        let flightLoopWeight = this._flightMoveW * this._flightFade * (1 - this._flightBoostW);
+        let flightIdleWeight = (1 - this._flightMoveW) * this._flightFade * (1 - this._flightBoostW);
+        
+        // If falling or landing, override walking AND flying weights
         if (this._fallW > 0.01 || this._landW > 0.01) {
           const override = Math.max(this._fallW, this._landW);
           locoWeight *= (1 - override);
           idleWeight *= (1 - override);
           runWeight *= (1 - override);
           walkWeight *= (1 - override);
+          flightBoostWeight *= (1 - override);
+          flightLoopWeight *= (1 - override);
+          flightIdleWeight *= (1 - override);
         }
-        
-        // Flight locomotion weights
-        const flightBoostWeight = this._flightBoostW * this._flightFade;
-        const flightLoopWeight = this._flightMoveW * this._flightFade * (1 - this._flightBoostW);
-        const flightIdleWeight = (1 - this._flightMoveW) * this._flightFade * (1 - this._flightBoostW);
         
         if (this.walkAction) this.walkAction.setEffectiveWeight(walkWeight);
         if (this.runAction) this.runAction.setEffectiveWeight(runWeight);
         this.idleAction.setEffectiveWeight(idleWeight);
         
-        if (this.flightIdleAction) this.flightIdleAction.setEffectiveWeight(flightIdleWeight);
-        if (this.flightLoopAction) this.flightLoopAction.setEffectiveWeight(flightLoopWeight);
         if (this.flightBoostAction) this.flightBoostAction.setEffectiveWeight(flightBoostWeight);
+        if (this.flightLoopAction) this.flightLoopAction.setEffectiveWeight(flightLoopWeight);
+        if (this.flightIdleAction) this.flightIdleAction.setEffectiveWeight(flightIdleWeight);
         
-        if (this.fallAction) this.fallAction.setEffectiveWeight(this._fallW * (1 - this._flightFade) * (1 - this._landW));
+        if (this.fallAction) this.fallAction.setEffectiveWeight(this._fallW * (1 - this._landW));
         if (this.landAction) this.landAction.setEffectiveWeight(this._landW * (1 - this._flightFade));
         
         if (this._loco) {

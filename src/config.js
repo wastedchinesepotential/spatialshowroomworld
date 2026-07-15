@@ -66,7 +66,7 @@ export const config = {
     minDist:    8.0,
     maxDist:    25,
     height:     3.0,      // Raised camera height
-    pitchMin:  -0.32,
+    pitchMin:  -0.55,     // Allows looking somewhat higher up into the sky while flying
     pitchMax:   0.95,
     yawSpeed:   0.0042,
     pitchSpeed: 0.0042,

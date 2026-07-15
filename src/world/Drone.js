@@ -1,15 +1,66 @@
 import * as THREE from 'three';
 
+/**
+ * Multi-drone manager. All 5 drones are pre-created at startup (shader compiles once,
+ * no lag spikes). They start hidden and are revealed one-by-one via addOrb().
+ * 
+ * During flight, drones switch to a spiral trail behind the player,
+ * anchored to the CAMERA direction so they rotate with the player on mobile.
+ */
 export class Drone {
   constructor(experience) {
     this.experience = experience;
-    this.group = new THREE.Group();
-    this.experience.scene.add(this.group);
+    this.maxOrbs = 5;
+    this.activeCount = 0;
+    this.drones = [];
 
     this.uniforms = { uTime: { value: 0 } };
 
-    // Drone visual (small metallic orb)
-    const geo = new THREE.SphereGeometry(0.15, 32, 32);
+    // Pre-allocate all reusable vectors (zero GC pressure in update loop)
+    this._up = new THREE.Vector3();
+    this._fwd = new THREE.Vector3();
+    this._right = new THREE.Vector3();
+    this._orbitPos = new THREE.Vector3();
+    this._trailPos = new THREE.Vector3();
+    this._targetPos = new THREE.Vector3();
+    this._scaleVec = new THREE.Vector3();
+    this._camDir = new THREE.Vector3();
+    this._camRight = new THREE.Vector3();
+    this._trailBlend = 0;
+
+    // Pre-build the shared geometry and material once
+    this._geo = new THREE.SphereGeometry(0.15, 32, 32);
+    this._mat = this._buildMaterial();
+
+    // Pre-create ALL 5 drones at construction time
+    for (let i = 0; i < this.maxOrbs; i++) {
+      const group = new THREE.Group();
+      this.experience.scene.add(group);
+
+      const mesh = new THREE.Mesh(this._geo, this._mat.clone());
+      mesh.material.onBeforeCompile = this._mat.onBeforeCompile;
+      group.add(mesh);
+
+      const light = new THREE.PointLight(0xffffff, 0, 20, 2);
+      light.castShadow = false; // Fixed: 5 point lights casting shadows was rendering the scene 30 extra times per frame!
+      light.shadow.bias = -0.001;
+      group.add(light);
+
+      group.scale.setScalar(0.001);
+      group.visible = true;
+
+      this.drones.push({
+        group,
+        mesh,
+        light,
+        orbitAngle: (2 * Math.PI / this.maxOrbs) * i,
+        spawnScale: 0,
+        active: false
+      });
+    }
+  }
+
+  _buildMaterial() {
     const mat = new THREE.MeshPhysicalMaterial({
       color: 0x444444,
       metalness: 1.0,
@@ -118,9 +169,9 @@ export class Drone {
         `
         #include <emissivemap_fragment>
         
-        vec3 col1 = vec3(0.0, 1.0, 0.8); // Cyan
-        vec3 col2 = vec3(1.0, 0.2, 0.6); // Magenta
-        vec3 col3 = vec3(1.0, 0.6, 0.0); // Orange
+        vec3 col1 = vec3(0.0, 1.0, 0.8);
+        vec3 col2 = vec3(1.0, 0.2, 0.6);
+        vec3 col3 = vec3(1.0, 0.6, 0.0);
         
         float blend1 = sin(vPos.y * 20.0 + uTime * 3.0) * 0.5 + 0.5;
         float blend2 = cos(vPos.x * 15.0 - uTime * 2.0) * 0.5 + 0.5;
@@ -128,79 +179,129 @@ export class Drone {
         vec3 grad = mix(col1, col2, blend1);
         grad = mix(grad, col3, blend2);
         
-        totalEmissiveRadiance = grad * 2.5; // Animated gradient glow
+        totalEmissiveRadiance = grad * 2.5;
         `
       );
     };
 
-    this.mesh = new THREE.Mesh(geo, mat);
-    this.group.add(this.mesh);
-
-    // Drone light
-    this.light = new THREE.PointLight(0xffffff, 5, 20, 2); 
-    this.light.castShadow = true;
-    this.light.shadow.bias = -0.001;
-    this.group.add(this.light);
-
-    this.orbitAngle = 0;
-    this.active = false;
-    this.group.visible = true; // ALWAYS true so the shader compiles on frame 1 to prevent lag spike
-    this._spawnScale = 0;
+    return mat;
   }
+
+  addOrb() {
+    if (this.activeCount >= this.maxOrbs) return this.activeCount;
+    this.drones[this.activeCount].active = true;
+    this.drones[this.activeCount].spawnScale = 0;
+    this.activeCount++;
+    for (let i = 0; i < this.activeCount; i++) {
+      this.drones[i].orbitAngle = (2 * Math.PI / this.activeCount) * i;
+    }
+    
+    // Show Spirit Bomb button if we reach max
+    if (this.activeCount === this.maxOrbs) {
+      const btn = document.getElementById('btn-bomb');
+      if (btn) btn.style.display = 'block';
+    }
+    
+    return this.activeCount;
+  }
+
+  reset() {
+    this.activeCount = 0;
+    for (let i = 0; i < this.maxOrbs; i++) {
+      this.drones[i].active = false;
+      this.drones[i].spawnScale = 0;
+    }
+    
+    const btn = document.getElementById('btn-bomb');
+    if (btn) btn.style.display = 'none';
+  }
+
+  getCount() { return this.activeCount; }
 
   update(delta, elapsed) {
     this.uniforms.uTime.value = elapsed;
 
-    const input = this.experience.input;
-    if (input && input.toggleDrone) {
-      this.active = !this.active;
-    }
-
-    // Smoothly animate the spawn/despawn scale (0.0 to 1.0)
-    const targetSpawn = this.active ? 1.0 : 0.0;
-    this._spawnScale += (targetSpawn - this._spawnScale) * delta * 5.0;
-
     const player = this.experience.world?.player;
     if (!player) return;
 
-    // Orbit parameters
-    const radius = 2.5; // Wider orbit for giant avatar
-    const speed = 1.5;  // Orbit speed
-    const heightOffset = 5.0; // Above head but within camera frame
-    
-    // Constant large scale, modulated by the spawn animation
-    const targetScale = 3.0 * this._spawnScale;
-    this.group.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), delta * 5.0);
-    
-    this.orbitAngle += delta * speed;
+    // Detect flight state
+    const isFlying = player.flying;
+    const isFlyingForward = isFlying && player._isFlyingForward;
 
-    // Calculate position relative to player
-    const targetPos = player.position.clone();
-    
-    // Create a local right/forward basis from player's up vector
-    const up = player.surfaceUp || new THREE.Vector3(0, 1, 0);
-    const forward = player.forward || new THREE.Vector3(0, 0, -1);
-    const right = new THREE.Vector3().crossVectors(forward, up).normalize();
+    // Blend between orbit (0) and trail (1)
+    const targetBlend = isFlyingForward ? 1.0 : 0.0;
+    this._trailBlend += (targetBlend - this._trailBlend) * Math.min(delta * 4.0, 1.0);
 
-    // Calculate orbit offset
-    const offsetX = Math.cos(this.orbitAngle) * radius;
-    const offsetZ = Math.sin(this.orbitAngle) * radius;
+    // Follow speed: tighter during flight
+    const followLerp = isFlying ? Math.min(delta * 15.0, 1.0) : Math.min(delta * 5.0, 1.0);
 
-    // High intensity light for giant avatar, faded by spawn animation
-    const targetIntensity = 30.0 * this._spawnScale;
-    const targetDistance = 45.0;
-    this.light.intensity += (targetIntensity - this.light.intensity) * delta * 5.0;
-    this.light.distance += (targetDistance - this.light.distance) * delta * 5.0;
+    // Use CAMERA direction for trail so it rotates with the player on mobile
+    const cam = this.experience.camera;
+    this._camDir.set(0, 0, -1).applyQuaternion(cam.instance.quaternion);
+    this._camDir.y = 0; // Flatten to horizontal
+    this._camDir.normalize();
+    this._camRight.set(this._camDir.z, 0, -this._camDir.x); // Perpendicular on XZ
 
-    // Apply offset to target position using local basis
-    const orbitOffset = new THREE.Vector3()
-      .addScaledVector(right, offsetX)
-      .addScaledVector(forward, offsetZ)
-      .addScaledVector(up, heightOffset + Math.sin(elapsed * 2) * 0.2); // Hover bob
+    // Player basis for orbit mode
+    this._up.copy(player.surfaceUp || new THREE.Vector3(0, 1, 0));
+    this._fwd.copy(player.forward || new THREE.Vector3(0, 0, -1));
+    this._right.crossVectors(this._fwd, this._up).normalize();
 
-    targetPos.add(orbitOffset);
+    const orbitRadius = 2.5;
+    const orbitSpeed = 1.5;
+    const orbitHeight = 3.0;
 
-    // Smooth follow
-    this.group.position.lerp(targetPos, Math.min(delta * 5.0, 1.0));
+    // Spiral trail params — each orb at a different angle/depth behind
+    const trailBaseDepth = 4.5; // Pushed further back so it doesn't clip feet
+    const trailRadius = 1.2;
+    const trailHeight = 1.0;
+
+    for (let i = 0; i < this.maxOrbs; i++) {
+      const d = this.drones[i];
+
+      // Spawn/despawn scale
+      const targetSpawn = d.active ? 1.0 : 0.0;
+      d.spawnScale += (targetSpawn - d.spawnScale) * delta * 5.0;
+      const s = 3.0 * d.spawnScale;
+      this._scaleVec.set(s, s, s);
+      d.group.scale.lerp(this._scaleVec, delta * 5.0);
+
+      // === ORBIT POSITION (walking/idle) ===
+      d.orbitAngle += delta * orbitSpeed;
+      this._orbitPos.copy(player.position);
+      this._orbitPos.addScaledVector(this._right, Math.cos(d.orbitAngle) * orbitRadius);
+      this._orbitPos.addScaledVector(this._fwd, Math.sin(d.orbitAngle) * orbitRadius);
+      this._orbitPos.addScaledVector(this._up, orbitHeight + Math.sin(elapsed * 2 + i) * 0.2);
+
+      // === SPIRAL TRAIL (flying) ===
+      // Each drone spirals at a unique angle, staggered in depth behind player
+      const activeIdx = d.active ? this._getActiveIndex(i) : i;
+      const depthStep = trailBaseDepth + activeIdx * 1.5; // Each one further back
+      const spiralAngle = elapsed * 3.0 + activeIdx * (2 * Math.PI / Math.max(this.activeCount, 1));
+      const spiralX = Math.cos(spiralAngle) * trailRadius;
+      const spiralY = Math.sin(spiralAngle) * trailRadius;
+
+      this._trailPos.copy(player.position);
+      this._trailPos.addScaledVector(this._camDir, -depthStep); // Behind camera direction
+      this._trailPos.addScaledVector(this._camRight, spiralX);
+      this._trailPos.y += trailHeight + spiralY;
+
+      // === BLEND ===
+      this._targetPos.lerpVectors(this._orbitPos, this._trailPos, this._trailBlend);
+      d.group.position.lerp(this._targetPos, followLerp);
+
+      // Light
+      const targetInt = d.active ? 30.0 * d.spawnScale : 0;
+      d.light.intensity += (targetInt - d.light.intensity) * delta * 5.0;
+      d.light.distance += (45.0 - d.light.distance) * delta * 5.0;
+    }
+  }
+
+  _getActiveIndex(globalIdx) {
+    let count = 0;
+    for (let j = 0; j < globalIdx; j++) {
+      if (this.drones[j].active) count++;
+    }
+    return count;
   }
 }

@@ -11,6 +11,7 @@ export class Camera {
     this.yaw = -0.21;
     this.pitch = -0.06;
     this.distance = config.camera.distance;
+    this.shake = 0;
     this.target = new THREE.Vector3(0, 1, 0);
     this._desired = new THREE.Vector3();
     this._lookAt = new THREE.Vector3();
@@ -34,22 +35,37 @@ export class Camera {
   update(dt = 0.016) {
     const cosP = Math.cos(this.pitch);
 
+    let camY = this.target.y + config.camera.height + Math.sin(this.pitch) * this.distance;
+    if (camY < 0.5) camY = 0.5; // Prevent clipping under ground
+
     this._desired.set(
       this.target.x + Math.sin(this.yaw) * cosP * this.distance,
-      this.target.y + config.camera.height + Math.sin(this.pitch) * this.distance,
+      camY,
       this.target.z + Math.cos(this.yaw) * cosP * this.distance
     );
     const lerpFactor = 1.0 - Math.pow(1.0 - config.camera.damping, dt * 60);
     this.instance.position.lerp(this._desired, lerpFactor);
+    
+    // Apply Shake
+    if (this.shake > 0.01) {
+      this.instance.position.x += (Math.random() - 0.5) * this.shake;
+      this.instance.position.y += (Math.random() - 0.5) * this.shake;
+      this.instance.position.z += (Math.random() - 0.5) * this.shake;
+      this.shake -= dt * 3.0; // Decay
+      if (this.shake < 0) this.shake = 0;
+    }
     
     this._lookAt.set(this.target.x, this.target.y, this.target.z);
     this.instance.lookAt(this._lookAt);
   }
   snap() {
     const cosP = Math.cos(this.pitch);
+    let camY = this.target.y + config.camera.height + Math.sin(this.pitch) * this.distance;
+    if (camY < 0.5) camY = 0.5; // Prevent clipping under ground
+
     this._desired.set(
       this.target.x + Math.sin(this.yaw) * cosP * this.distance,
-      this.target.y + config.camera.height + Math.sin(this.pitch) * this.distance,
+      camY,
       this.target.z + Math.cos(this.yaw) * cosP * this.distance
     );
     this.instance.position.copy(this._desired);

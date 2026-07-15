@@ -42,7 +42,7 @@ export class Experience {
   }
 
   async init() {
-    this.ui.setLoading(0.2, 'WAKING THE ENGINE…');
+    this.ui.setLoading(0.2, 'WAKING VOLUMETRIC ENGINE…');
     this.assets = new AssetLoader();
     
     // Load all core assets and engines in parallel to cut load times in half
@@ -170,6 +170,12 @@ export class Experience {
     if (player && player.flying) {
       blurAmt = Math.max(0, (player.speed - 15.0) / 50.0);
     }
+    
+    // Add Spirit Bomb blur build up
+    if (this.world?.spiritBomb?.blurAmt > 0) {
+      blurAmt = Math.max(blurAmt, this.world.spiritBomb.blurAmt);
+    }
+    
     this.postfx.stylize.uniforms.uSpeed.value = blurAmt;
     this.postfx.render(elapsed);
     

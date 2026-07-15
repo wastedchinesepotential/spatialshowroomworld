@@ -35,7 +35,9 @@ export class Audio {
       splat1:  '/assets/sounds/palisade/05.31.26 palisade glames BASS.mp3', // Splat 1 is BASS
       shoe:    '/assets/sounds/palisade/05.31.26 palisade glames DRUGS.mp3', // Shoe is DRUGS
       splat2:  '/assets/sounds/palisade/05.31.26 palisade glames SNAT.mp3',
-      impact:  '/assets/sounds/techimpact.wav'
+      impact:  '/assets/sounds/techimpact.wav',
+      spiritbomb: '/assets/sounds/spiritbomb.wav',
+      sparkle: '/assets/sounds/sparkle.wav'
     };
     
     const entries = Object.entries(files);
@@ -78,6 +80,32 @@ export class Audio {
       this.impactAudio.setLoop(false);
       this.impactAudio.setVolume(1.0);
       this.experience.scene.add(this.impactAudio);
+    }
+    
+    // Spirit Bomb (SFX)
+    if (this.stems.spiritbomb) {
+      this.spiritBombAudio = new THREE.PositionalAudio(this.listener);
+      this.spiritBombAudio.setBuffer(this.stems.spiritbomb);
+      this.spiritBombAudio.setRefDistance(10);
+      this.spiritBombAudio.setMaxDistance(300);
+      this.spiritBombAudio.setLoop(false);
+      this.spiritBombAudio.setVolume(0.25); // Lower volume as requested
+      
+      // Attach to the orb mesh so it fades out as it flies away
+      if (this.experience.world?.spiritBomb) {
+        this.experience.world.spiritBomb.mesh.add(this.spiritBombAudio);
+      }
+    }
+    
+    // Sparkle (SFX)
+    if (this.stems.sparkle) {
+      this.sparkleAudio = new THREE.PositionalAudio(this.listener);
+      this.sparkleAudio.setBuffer(this.stems.sparkle);
+      this.sparkleAudio.setRefDistance(5);
+      this.sparkleAudio.setMaxDistance(50);
+      this.sparkleAudio.setLoop(false);
+      this.sparkleAudio.setVolume(0.8);
+      this.experience.scene.add(this.sparkleAudio);
     }
     
     // Shoe (DRUGS)
@@ -234,5 +262,29 @@ export class Audio {
     if (this.splat1Audio.isPlaying) this.splat1Audio.setPlaybackRate(newRate);
     if (this.splat2Audio.isPlaying) this.splat2Audio.setPlaybackRate(newRate);
     */
+  }
+
+
+
+  playTechImpact() {
+    if (this.impactAudio && this.enabled) {
+      if (this.impactAudio.isPlaying) this.impactAudio.stop();
+      this.impactAudio.play();
+    }
+  }
+
+  playSpiritBomb() {
+    if (this.spiritBombAudio && this.enabled) {
+      if (this.spiritBombAudio.isPlaying) this.spiritBombAudio.stop();
+      this.spiritBombAudio.play();
+    }
+  }
+
+  playSparkle(pos) {
+    if (this.sparkleAudio && this.enabled) {
+      if (this.sparkleAudio.isPlaying) this.sparkleAudio.stop();
+      this.sparkleAudio.position.copy(pos);
+      this.sparkleAudio.play();
+    }
   }
 }

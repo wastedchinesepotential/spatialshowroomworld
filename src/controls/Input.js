@@ -7,8 +7,8 @@ export class Input {
     this.canvas = experience.canvas;
     this.camera = experience.camera;
     this.moveX = 0; this.moveZ = 0; this.strafeX = 0;
-    this.run = false; this.jump = false; this.interact = false;
-    this.toggleVehicle = false; this.toggleDrone = false; this.toggleAvatar = false; this.ascend = false; this._holdJump = false;
+    this.run = false; this.jump = false; this.interact = false; this.castBomb = false;
+    this.toggleVehicle = false; this.toggleAvatar = false; this.ascend = false; this._holdJump = false;
     this.keys = new Set(); this.joystick = new Joystick();
     this._joyId = null; this._lookId = null;
     this._lookLast = { x: 0, y: 0 }; this._lookMoved = 0; this._lookStart = 0;
@@ -25,7 +25,7 @@ export class Input {
       if (k === 'e' && !e.repeat) this.interact = true;
       if (k === 'f' && !e.repeat) this.toggleVehicle = true; // Flight toggle
       if (k === 'n') this.toggleAvatar = true;
-      if (k === 'o') this.toggleDrone = true;
+      if (k === 'b') this.castBomb = true;
       if (k === 'm') this.experience.ui.toggleAudio();
       if (k === 'p') this.experience.ui.togglePerf();
     });
@@ -83,8 +83,8 @@ export class Input {
     });
     press('btn-jump', () => { this.jump = true; });
     press('btn-vehicle', () => { this.toggleVehicle = true; });
-    press('btn-drone', () => { this.toggleDrone = true; });
     press('btn-avatar', () => { this.toggleAvatar = true; });
+    press('btn-bomb', () => { this.castBomb = true; });
     press('btn-home', () => { this.experience.goHome(); });
     press('btn-audio', () => { this.experience.ui.toggleAudio(); });
     document.getElementById('btn-jump')?.addEventListener('pointerdown', () => { this._holdJump = true; });
@@ -118,5 +118,5 @@ export class Input {
     this.ascend = this.keys.has(' ') || this._holdJump;
     this.descend = this.keys.has('q');
   }
-  endFrame() { this.jump = false; this.dash = false; this.interact = false; this.toggleVehicle = false; this.toggleDrone = false; this.toggleAvatar = false; }
+  endFrame() { this.jump = false; this.dash = false; this.interact = false; this.toggleVehicle = false; this.toggleAvatar = false; this.castBomb = false; }
 }

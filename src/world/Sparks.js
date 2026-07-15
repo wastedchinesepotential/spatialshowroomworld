@@ -8,26 +8,26 @@ export class Sparks {
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(this.count * 3);
     const vel = new Float32Array(this.count * 3);
+    const col = new Float32Array(this.count * 3);
     const life = new Float32Array(this.count); // 0 means dead
     
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     geo.setAttribute('aVel', new THREE.BufferAttribute(vel, 3));
+    geo.setAttribute('aColor', new THREE.BufferAttribute(col, 3));
     geo.setAttribute('aLife', new THREE.BufferAttribute(life, 1));
     
-    this.uniforms = {
-      uColor: { value: new THREE.Color(0xffaa22) } // Intense orange/gold spark
-    };
-    
     const mat = new THREE.ShaderMaterial({
-      uniforms: this.uniforms,
       transparent: true,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       vertexShader: `
         attribute float aLife;
+        attribute vec3 aColor;
         varying float vLife;
+        varying vec3 vColor;
         void main() {
           vLife = aLife;
+          vColor = aColor;
           if (aLife <= 0.0) {
             gl_Position = vec4(0.0);
             return;
@@ -40,8 +40,8 @@ export class Sparks {
         }
       `,
       fragmentShader: `
-        uniform vec3 uColor;
         varying float vLife;
+        varying vec3 vColor;
         void main() {
           if (vLife <= 0.0) discard;
           
@@ -55,7 +55,7 @@ export class Sparks {
           
           // Pentagonal glowing center
           float alpha = vLife * pow(smoothstep(0.4, 0.0, d), 2.0) * 3.0;
-          gl_FragColor = vec4(uColor, alpha);
+          gl_FragColor = vec4(vColor, alpha);
         }
       `
     });
@@ -67,15 +67,27 @@ export class Sparks {
     this.idx = 0;
   }
   
-  emit(pos, normal, count = 100) {
+  emit(pos, normal, count = 100, color = 0xffaa22) {
     const geo = this.points.geometry;
     const p = geo.attributes.position.array;
     const v = geo.attributes.aVel.array;
+    const c = geo.attributes.aColor.array;
     const l = geo.attributes.aLife.array;
+    
+    const isRainbow = color === 'rainbow';
+    const targetColor = isRainbow ? new THREE.Color() : new THREE.Color(color);
     
     for(let i=0; i<count; i++) {
       let j = this.idx % this.count;
       p[j*3] = pos.x; p[j*3+1] = pos.y; p[j*3+2] = pos.z;
+      
+      if (isRainbow) {
+        targetColor.setHSL(Math.random(), 1.0, 0.5);
+      }
+      
+      c[j*3] = targetColor.r;
+      c[j*3+1] = targetColor.g;
+      c[j*3+2] = targetColor.b;
       
       // Spray cone around normal
       const rDir = new THREE.Vector3(
@@ -96,6 +108,7 @@ export class Sparks {
     }
     geo.attributes.position.needsUpdate = true;
     geo.attributes.aVel.needsUpdate = true;
+    geo.attributes.aColor.needsUpdate = true;
     geo.attributes.aLife.needsUpdate = true;
   }
   
