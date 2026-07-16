@@ -594,7 +594,7 @@ export class Player {
         const targetFlightMove = (this.flying && this._isFlyingForward && this.speed > 0.3) ? 1 : 0;
         const targetFlightBoost = (this.dashTimer > 0 && this._isFlyingForward) ? 1 : 0; // Only twirl if moving forward
         const targetFall = ((this.isFalling && !this.flying) || this._forceFall) && this.landingTimer <= 0 ? 1 : 0;
-        const targetLand = (this.landingTimer > 0) ? 1 : 0;
+        const targetLand = (this.landingTimer > 0 && !this.flying) ? 1 : 0;
         
         this._moveW += (targetMove - this._moveW) * Math.min(delta * 6, 1);
         this._flightFade += (targetFlight - this._flightFade) * Math.min(delta * 6, 1);
@@ -626,16 +626,13 @@ export class Player {
         let flightLoopWeight = this._flightMoveW * this._flightFade * (1 - this._flightBoostW);
         let flightIdleWeight = (1 - this._flightMoveW) * this._flightFade * (1 - this._flightBoostW);
         
-        // If falling or landing, override walking AND flying weights
+        // If falling or landing, override walking weights (BUT NOT flying weights)
         if (this._fallW > 0.01 || this._landW > 0.01) {
-          const override = Math.max(this._fallW, this._landW);
+          const override = Math.max(this._fallW, this._landW) * (1 - this._flightFade);
           locoWeight *= (1 - override);
           idleWeight *= (1 - override);
           runWeight *= (1 - override);
           walkWeight *= (1 - override);
-          flightBoostWeight *= (1 - override);
-          flightLoopWeight *= (1 - override);
-          flightIdleWeight *= (1 - override);
         }
         
         if (this.walkAction) this.walkAction.setEffectiveWeight(walkWeight);
